@@ -1,6 +1,5 @@
 
 from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Locate the .env file in the backend directory.
