@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -6,168 +8,110 @@ from ..models import Employee
 from ..schemas import (
     EmployeeCreate,
     EmployeeResponse,
-    EmployeeUpdate
+    EmployeeUpdate,
 )
 
 router = APIRouter(
     prefix="/api/employees",
-    tags=["Employees"]
+    tags=["Employees"],
 )
 
+@router.get("/", response_model=list[EmployeeResponse])
+def get_employees(db: Session = Depends(get_db)):
+    return db.query(Employee).order_by(Employee.id).all()
 
-# GET ALL EMPLOYEES
-@router.get(
-    "/",
-    response_model=list[EmployeeResponse]
-)
-def get_employees(
-    db: Session = Depends(get_db)
-):
-    employees = db.query(Employee).all()
-
-    return employees
-
-
-# GET ONE EMPLOYEE
-@router.get(
-    "/{employee_id}",
-    response_model=EmployeeResponse
-)
+@router.get("/{employee_id}", response_model=EmployeeResponse)
 def get_employee(
     employee_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    employee = db.get(Employee, employee_id)
 
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
+    if employee is None:
         raise HTTPException(
-            status_code=404,
-            detail="Employee not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found",
         )
 
     return employee
 
-
-# CREATE EMPLOYEE
 @router.post(
     "/",
     response_model=EmployeeResponse,
-    status_code=201
+    status_code=status.HTTP_201_CREATED,
 )
 def create_employee(
-    employee: EmployeeCreate,
-    db: Session = Depends(get_db)
+    employee_data: EmployeeCreate,
+    db: Session = Depends(get_db),
 ):
+    employee = Employee(**employee_data.model_dump())
 
-    existing_employee = (
-        db.query(Employee)
-        .filter(
-            Employee.employee_id == employee.employee_id
-        )
-        .first()
-    )
+    try:
+        db.add(employee)
+        db.commit()
+        db.refresh(employee)
+        return employee
 
-    if existing_employee:
+    except IntegrityError:
+        db.rollback()
         raise HTTPException(
-            status_code=400,
-            detail="Employee ID already exists"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Employee ID or email already exists",
         )
 
-    existing_email = (
-        db.query(Employee)
-        .filter(
-            Employee.email == employee.email
-        )
-        .first()
-    )
-
-    if existing_email:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already exists"
-        )
-
-    new_employee = Employee(
-        employee_id=employee.employee_id,
-        first_name=employee.first_name,
-        last_name=employee.last_name,
-        email=employee.email,
-        phone=employee.phone,
-        department=employee.department,
-        job_title=employee.job_title,
-        status=employee.status
-    )
-
-    db.add(new_employee)
-    db.commit()
-    db.refresh(new_employee)
-
-    return new_employee
-
-
-# UPDATE EMPLOYEE
-@router.put(
-    "/{employee_id}",
-    response_model=EmployeeResponse
-)
+@router.patch("/{employee_id}", response_model=EmployeeResponse)
 def update_employee(
     employee_id: int,
     employee_data: EmployeeUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    employee = db.get(Employee, employee_id)
 
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
+    if employee is None:
         raise HTTPException(
-            status_code=404,
-            detail="Employee not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found",
         )
 
-    update_data = employee_data.model_dump(
-        exclude_unset=True
-    )
+    update_data = employee_data.model_dump(exclude_unset=True)
 
-    for key, value in update_data.items():
-        setattr(employee, key, value)
+    # Required database fields must not be set to null.
+    for field in ("first_name", "last_name", "email", "status"):
+        if field in update_data and update_data[field] is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{field} cannot be null",
+            )
 
-    db.commit()
-    db.refresh(employee)
+    for field, value in update_data.items():
+        setattr(employee, field, value)
 
-    return employee
+    try:
+        db.commit()
+        db.refresh(employee)
+        return employee
 
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email or another unique value already exists",
+        )
 
-# DELETE EMPLOYEE
-@router.delete("/{employee_id}")
+@router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee(
     employee_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
+    employee = db.get(Employee, employee_id)
 
-    employee = (
-        db.query(Employee)
-        .filter(Employee.id == employee_id)
-        .first()
-    )
-
-    if not employee:
+    if employee is None:
         raise HTTPException(
-            status_code=404,
-            detail="Employee not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found",
         )
 
     db.delete(employee)
     db.commit()
 
-    return {
-        "message": "Employee deleted successfully"
-    }
+    return None

@@ -1,25 +1,34 @@
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./employees.db"
+from .config import settings
+
+DATABASE_URL = settings.database_url
+
+# SQLite needs this option when connections may be used
+# across FastAPI's request-handling threads.
+connect_args = (
+    {"check_same_thread": False}
+    if DATABASE_URL.startswith("sqlite")
+    else {}
+)
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args=connect_args,
 )
 
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine,
 )
 
 Base = declarative_base()
 
-
 def get_db():
     db = SessionLocal()
-
     try:
         yield db
     finally:

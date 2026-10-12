@@ -52,7 +52,7 @@ function Employees() {
 
             if (selectedEmployee) {
 
-                await api.put(
+                await api.patch(
                     `/employees/${selectedEmployee.id}`,
                     employee
                 );

@@ -3,25 +3,25 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
 from .routers import employees
+from .config import settings
+from contextlib import asynccontextmanager
 
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
-
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    yield
 
 app = FastAPI(
     title="Employee Management API",
     description="Employee Management System API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
-
 
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173"
-    ],
+    allow_origins=[settings.frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,4 +38,10 @@ app.include_router(
 def root():
     return {
         "message": "Employee Management API is running"
+    }
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok"
     }
