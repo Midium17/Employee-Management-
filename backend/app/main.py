@@ -4,18 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from .routers import employees
 from .config import settings
-from contextlib import asynccontextmanager
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    yield
 
 app = FastAPI(
     title="Employee Management API",
     description="Employee Management System API",
     version="1.0.0",
-    lifespan=lifespan
+    
 )
 
 # CORS

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, Date, String
 
 from .database import Base
 
@@ -51,3 +51,5 @@ class Employee(Base):
         String(30),
         default="Active"
     )
+
+    hire_date = Column(Date, nullable=True)

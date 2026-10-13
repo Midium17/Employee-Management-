@@ -1,5 +1,6 @@
 
 from typing import Literal
+from datetime import date
 
 from pydantic import (
     BaseModel,
@@ -18,6 +19,7 @@ class EmployeeBase(BaseModel):
     department: str | None = Field(default=None, max_length=100)
     job_title: str | None = Field(default=None, max_length=100)
     status: EmployeeStatus = "Active"
+    hire_date: date | None = None
 
 class EmployeeCreate(EmployeeBase):
     employee_id: str = Field(min_length=1, max_length=50)
@@ -30,6 +32,7 @@ class EmployeeUpdate(BaseModel):
     department: str | None = Field(default=None, max_length=100)
     job_title: str | None = Field(default=None, max_length=100)
     status: EmployeeStatus | None = None
+    hire_date: date | None = None
 
 class EmployeeResponse(EmployeeBase):
     id: int
