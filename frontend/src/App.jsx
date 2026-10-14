@@ -21,6 +21,7 @@ function App() {
             path="employees"
             element={<EmployeesPage />}
           />
+        
           <Route
             path="departments"
             element={<DepartmentsPage />}

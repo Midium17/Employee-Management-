@@ -76,7 +76,7 @@ function EmployeeTable({
                     {employee.first_name} {employee.last_name}
                   </td>
                   <td>{employee.email}</td>
-                  <td>{employee.department || "—"}</td>
+                  <td>{employee.department?.name ?? "Unassigned"}</td>
                   <td>{employee.job_title || "—"}</td>
                   <td>
                     <span
