@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 
 import EmployeeForm from "../components/EmployeeForm";
@@ -13,9 +12,10 @@ import {
 
 import "../App.css";
 
-function App() {
+function EmployeePage() {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +42,21 @@ function App() {
     loadEmployees();
   }, []);
 
+  function handleOpenAdd() {
+    setSelectedEmployee(null);
+    setShowForm(true);
+  }
+
+  function handleOpenEdit(employee) {
+    setSelectedEmployee(employee);
+    setShowForm(true);
+  }
+
+  function handleCloseForm() {
+    setSelectedEmployee(null);
+    setShowForm(false);
+  }
+
   async function handleSave(payload) {
     setSaving(true);
     setError("");
@@ -58,7 +73,7 @@ function App() {
         setMessage("Employee created successfully.");
       }
 
-      setSelectedEmployee(null);
+      handleCloseForm();
       await loadEmployees();
     } catch (err) {
       const detail = err.response?.data?.detail;
@@ -87,7 +102,7 @@ function App() {
       await deleteEmployee(employee.id);
 
       if (selectedEmployee?.id === employee.id) {
-        setSelectedEmployee(null);
+        handleCloseForm();
       }
 
       setMessage("Employee deleted successfully.");
@@ -111,30 +126,40 @@ function App() {
           </p>
         </div>
 
-        <div className="employee-count">
-          <span>Total employees</span>
-          <strong>{employees.length}</strong>
+        <div className="header-actions">
+          <div className="employee-count">
+            <span>Total employees</span>
+            <strong>{employees.length}</strong>
+          </div>
+
+          {!showForm && (
+            <button className="primary-button" onClick={handleOpenAdd}>
+              + Add Employee
+            </button>
+          )}
         </div>
       </header>
 
       {error && <div className="notice error">{error}</div>}
       {message && <div className="notice success">{message}</div>}
 
-      <EmployeeForm
-        employee={selectedEmployee}
-        onSave={handleSave}
-        onCancel={() => setSelectedEmployee(null)}
-        saving={saving}
-      />
-
-      <EmployeeTable
-        employees={employees}
-        loading={loading}
-        onEdit={setSelectedEmployee}
-        onDelete={handleDelete}
-      />
+      {showForm ? (
+        <EmployeeForm
+          employee={selectedEmployee}
+          onSave={handleSave}
+          onCancel={handleCloseForm}
+          saving={saving}
+        />
+      ) : (
+        <EmployeeTable
+          employees={employees}
+          loading={loading}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
+        />
+      )}
     </main>
   );
 }
 
-export default App;
+export default EmployeePage;

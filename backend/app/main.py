@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
-from .routers import employees
+from .routers import employees, departments
 from .config import settings
 
 
@@ -24,19 +24,14 @@ app.add_middleware(
 
 
 # Routes
-app.include_router(
-    employees.router
-)
+app.include_router(employees.router)
+app.include_router(departments.router)
 
 
 @app.get("/")
 def root():
-    return {
-        "message": "Employee Management API is running"
-    }
+    return { "message": "Employee Management API is running"}
 
 @app.get("/health")
 def health():
-    return {
-        "status": "ok"
-    }
+    return { "status": "healthy"}

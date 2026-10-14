@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 
 const emptyForm = {
@@ -60,6 +59,9 @@ function EmployeeForm({
     };
 
     onSave(payload);
+    
+    // Clear form inputs back to blank after submit (only runs if un-controlled or ready for new entry)
+    setForm(emptyForm);
   }
 
   return (
@@ -126,12 +128,30 @@ function EmployeeForm({
 
           <label>
             Department
-            <input
+            <select
               name="department"
               value={form.department}
               onChange={handleChange}
-              maxLength={100}
-            />
+            >
+              <option value="">
+                Select Department
+              </option>
+              <option value="IT">
+                IT
+              </option>
+              <option value="HR">
+                HR
+              </option>
+              <option value="Finance">
+                Finance
+              </option>
+              <option value="Sales">
+                Sales
+              </option>
+              <option value="Operations">
+                Operations
+              </option>
+            </select>
           </label>
 
           <label>
